@@ -4,14 +4,14 @@
 #A set of classes that implement an automaton for the Aho-Corasick algorithm.
 #
 #The Aho-Corasick algorithm provides a linear-time lookup solution to the exact
-#set matching problem. (i.e. locating all occurrences of a finite set of 
+#set matching problem. (i.e. locating all occurrences of a finite set of
 #patterns within an input target) The algorithm processes the input target in
 #a single pass versus multiple passes for a pattern.
 #
 #An example use might be to search for known sequences in a DNA string.
 #Although typically used to parse character strings, this implementation
 #is type independent. It can be used to parse any collection where
-#the items that make up that collection can be iterated. 
+#the items that make up that collection can be iterated.
 #
 #The implementation supports both a Non-deterministic and Deterministic
 #Finite Automaton construction. The NFA will consume less memory, but
@@ -25,7 +25,7 @@ module AhoC
 	#==Aho-Corasick Trie Class
 	#
 	#====Description
-	#A class for constructing and accessing an Aho-Corasick trie 
+	#A class for constructing and accessing an Aho-Corasick trie
 	#data structure. Any pattern that supports the "each" method
 	#in ruby can be added to the Trie. (e.g. strings or arrays)
 	#
@@ -56,9 +56,9 @@ module AhoC
 			@root = Node.new
 
 			if !arg[0] || arg[0] == :NFA
-				@type = :NFA	
+				@type = :NFA
 			elsif arg[0] == :DFA
-				@type = :DFA	
+				@type = :DFA
 			else
 				raise "Only :DFA or :NFA accepted as arguments"
 			end
@@ -104,7 +104,7 @@ module AhoC
 		# constructed from the node and its failure nodes.
 		def build
 			fifo_q = Array.new
-	
+
 			# Set the failures for the nodes coming out of the root node.
 			@root.get.each_pair do |item, node|
 				node.failure = @root
@@ -113,17 +113,17 @@ module AhoC
 
 			# Set the failures in breadth-first search order
 			# using a FIFO queue. A failure identifies the deepest node
-			# that is a proper suffix of the current node. 
+			# that is a proper suffix of the current node.
 			while !fifo_q.empty?
 				p_node = fifo_q.shift
 				if p_node.get
 					p_node.get.each_pair do |item, node|
 						# Push the current node onto the queue, so any child
 						# nodes can be processed later.
-						fifo_q.push node 
-					
+						fifo_q.push node
+
 						f_node = p_node.failure
-						
+
 						# Follow the failures until we find a goto transition
 						# or arrive back at the root node
 						while f_node.goto(item) == nil and !f_node.eql? @root
@@ -163,21 +163,21 @@ module AhoC
 
 			# If this is a string process each character
 			if String(target) == target
-				target.each_char do |char|
+				target.each_char.with_index do |char, index|
 					# Follow the failures until a goto transition is found
 					# or we return to the root node.
 					while(!node.goto(char) and !node.eql? @root)
 						node = node.failure
 					end
 
-					# If there is a goto transition follow it; otherwise, 
+					# If there is a goto transition follow it; otherwise,
 					# we can assume we are at the root node.
 					if node.goto(char)
 						node = node.goto(char)
 
-						if node.output		
+						if node.output
 							if block_given?
-								output = yield output, node.output
+								output = yield(output, node.output, index)
 							else
 								output = output + node.output
 							end
@@ -186,21 +186,21 @@ module AhoC
 					end
 				end
 			else # Otherwise, target should support "each" method.
-				for item in target
+				target.each_with_index do |item, index|
 					# Follow the failures until a goto transition is found
 					# or we return to the root node.
 					while(!node.goto(item) and !node.eql? @root)
 						node = node.failure
 					end
 
-					# If there is a goto transition follow it; otherwise, 
+					# If there is a goto transition follow it; otherwise,
 					# we can assume we are at the root node.
 					if node.goto(item)
 						node = node.goto(item)
 
-						if node.output		
+						if node.output
 							if block_given?
-								output = yield output, node.output
+								output = yield(output, node.output, index)
 							else
 								output = output + node.output
 							end
@@ -239,7 +239,7 @@ module AhoC
 					(node.failure).get.each_pair do |f_item,f_node|
 
 						# Don't overwrite an already existing transition
-						node.set(f_item, f_node) unless node.goto(f_item)	
+						node.set(f_item, f_node) unless node.goto(f_item)
 					end
 				end
 
@@ -254,10 +254,10 @@ module AhoC
 	#====Description
 	#Class for creating and accessing nodes that are added to an Aho-Corasick Trie.
 	class Node
-	
+
 		# failure: gets and sets the node to go to when no goto transition exists for an item.
 		attr_accessor :failure
-		# output: gets and sets the output at the node. 
+		# output: gets and sets the output at the node.
 		attr_accessor :output
 
 		# Creates an empty hash table to store goto transitions for this node.
@@ -288,4 +288,4 @@ module AhoC
 		end
 	end
 
-end 
+end
